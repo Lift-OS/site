@@ -413,6 +413,7 @@
       <button class="tab-button" data-tab="tab-jornada" id="tabJornadaBtn" style="display:none">Minha Jornada</button>
       <button class="tab-button" data-tab="tab-permissoes" id="tabPermissoesBtn" style="display:none">Permissões</button>
       <button class="tab-button" data-tab="tab-usuarios" id="tabUsuariosBtn" style="display:none">Usuários</button>
+      <button class="tab-button" data-tab="tab-preventivas" id="tabPreventivasBtn" style="display:none">Preventivas</button>
     </div>
 
     <!-- TAB ORÇAMENTO -->
@@ -745,7 +746,43 @@
         <div class="overflow-x-auto"><table class="w-full text-sm"><thead class="bg-[var(--bg-secondary)]"><tr><th class="p-2">Nome</th><th class="p-2">Login</th><th class="p-2">Nível</th><th class="p-2">Ações</th></tr></thead><tbody id="userTableBody"></tbody></table></div>
       </div>
     </div>
+    <!-- TAB PREVENTIVAS -->
+<div id="tab-preventivas" class="tab-content">
+  <div class="checklist-card p-4 md:p-5 mb-5">
+    <h2 class="font-display text-xl mb-4"><i class="fas fa-cog"></i> Regras de Manutenção Preventiva</h2>
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+      <input type="text" id="prev_descricao" class="form-input" placeholder="Descrição (ex: Troca de óleo)">
+      <input type="number" id="prev_intervalo" class="form-input" placeholder="Intervalo (horas)">
+      <select id="prev_marca" class="form-input"><option value="">Todas as marcas</option></select>
+      <input type="text" id="prev_modelo" class="form-input" placeholder="Modelo específico (opcional)">
+    </div>
+    <input type="hidden" id="prev_editId" value="">
+    <div class="flex gap-3 flex-wrap">
+      <button onclick="Preventivas.salvarRegra()" class="btn btn-primary"><i class="fas fa-save"></i> Salvar Regra</button>
+      <button id="btnPrevCancelar" onclick="Preventivas.cancelarEdicao()" class="btn btn-secondary" style="display:none">Cancelar</button>
+    </div>
+  </div>
 
+  <div class="checklist-card p-4 md:p-5 mb-5">
+    <h2 class="font-display text-xl mb-3"><i class="fas fa-list"></i> Regras Cadastradas</h2>
+    <div class="overflow-x-auto">
+      <table class="table-os">
+        <thead><tr><th>Descrição</th><th>Intervalo</th><th>Marca</th><th>Modelo</th><th>Ações</th></tr></thead>
+        <tbody id="prevRegrasBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="checklist-card p-4 md:p-5">
+    <h2 class="font-display text-xl mb-3"><i class="fas fa-chart-line"></i> Previsão de Próximas Manutenções</h2>
+    <div class="overflow-x-auto">
+      <table class="table-os" id="prevPrevisaoTable">
+        <thead><tr><th>Cliente</th><th>Equipamento</th><th>Horímetro Atual</th><th>Serviço</th><th>Próxima (h)</th><th>Status</th></tr></thead>
+        <tbody id="prevPrevisaoBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
   </main>
 
   <div id="toastCenter" class="toast-center"><i class="fas fa-check-circle text-green-500 text-xl"></i><span id="toastMessage">Operação realizada</span></div>
@@ -801,7 +838,8 @@ var State={
   osCounter:0,orcCounter:0,pecaCounter:0,agendamentos:[],jornada:{},timerStartRealTime:0,timerPausedAccum:0,
   onlineUsers:[],_initDone:false,
   pecas:[],movimentosEstoque:[],orcamentos:[],notificacoes:[],lastSeenOSIds:[],
-  selectedClientForOs:null, selectedEquipForOs:null
+  selectedClientForOs:null, selectedEquipForOs:null,
+  preventivasRegras: []
 };
 
 var Storage={
@@ -818,7 +856,9 @@ var Storage={
   saveMovimentos:function(){this.save('movimentos',State.movimentosEstoque)},loadMovimentos:function(){State.movimentosEstoque=this.load('movimentos')||[]},
   saveOrcamentos:function(){this.save('orcamentos',State.orcamentos)},loadOrcamentos:function(){State.orcamentos=this.load('orcamentos')||[]},
   saveNotificacoes:function(){this.save('notificacoes',State.notificacoes)},loadNotificacoes:function(){State.notificacoes=this.load('notificacoes')||[]},
-  saveLastSeen:function(){this.save('last_seen_os',State.lastSeenOSIds)},loadLastSeen:function(){State.lastSeenOSIds=this.load('last_seen_os')||[]}
+  saveLastSeen:function(){this.save('last_seen_os',State.lastSeenOSIds)},loadLastSeen:function(){State.lastSeenOSIds=this.load('last_seen_os')||[]},
+  savePreventivas: function() { this.save('preventivas_regras', State.preventivasRegras); },
+      loadPreventivas: function(){ State.preventivasRegras = this.load('preventivas_regras')||[]}
 };
 
 var SyncUI={set:function(m,c){var s=$('syncStatusText');if(s)s.textContent=m;var d=$('hbDot');if(d)d.className='hb-dot '+(c||'');var ss=$('syncStatus');if(ss)ss.className='sync-status'+(c?' '+c:'')}};
@@ -967,7 +1007,9 @@ var Heartbeat={_timer:null,_lastPing:0,_pending:false,_status:'offline',
 
 var Auth={currentUser:null,inactivityTimer:null,
   permissoes:{
-    admin:{criar_os:true,editar_os:true,excluir_os:true,mudar_status:true,salvar_os:true,checklist_visualizar:true,checklist_preencher:true,fotos_horimetro:true,fotos_servico:true,fotos_pendencias:true,assinatura_tecnico:true,assinatura_cliente:true,timer_controle:true,horas_editar:true,gerar_pdf:true,enviar_email:true,enviar_whatsapp:true,sincronizar:true,limpar_fila:true,baixar_dados:true,heartbeat:true,clientes_cadastrar:true,clientes_editar:true,clientes_excluir:true,clientes_exportar_csv:true,clientes_importar_csv:true,clientes_visualizar:true,historico_visualizar:true,historico_excluir:true,historico_exportar_csv:true,historico_importar_csv:true,historico_limpar:true,agendamentos_criar:true,agendamentos_editar:true,agendamentos_excluir:true,agendamentos_concluir:true,agendamentos_visualizar:true,usuarios_criar:true,usuarios_editar:true,usuarios_excluir:true,usuarios_visualizar:true,permissoes_editar:true,jornada_registrar:false,estoque_cadastrar:true,estoque_editar:true,estoque_excluir:true,estoque_movimentar:true,orcamento_criar:true,orcamento_editar:true,orcamento_excluir:true,orcamento_aprovar:true,orcamento_visualizar:true},
+    admin:{criar_os:true,editar_os:true,excluir_os:true,mudar_status:true,salvar_os:true,checklist_visualizar:true,checklist_preencher:true,fotos_horimetro:true,fotos_servico:true,fotos_pendencias:true,assinatura_tecnico:true,assinatura_cliente:true,timer_controle:true,horas_editar:true,gerar_pdf:true,enviar_email:true,enviar_whatsapp:true,sincronizar:true,limpar_fila:true,baixar_dados:true,heartbeat:true,clientes_cadastrar:true,clientes_editar:true,clientes_excluir:true,clientes_exportar_csv:true,clientes_importar_csv:true,clientes_visualizar:true,historico_visualizar:true,historico_excluir:true,historico_exportar_csv:true,historico_importar_csv:true,historico_limpar:true,agendamentos_criar:true,agendamentos_editar:true,agendamentos_excluir:true,agendamentos_concluir:true,agendamentos_visualizar:true,usuarios_criar:true,usuarios_editar:true,usuarios_excluir:true,usuarios_visualizar:true,permissoes_editar:true,jornada_registrar:false,estoque_cadastrar:true,estoque_editar:true,estoque_excluir:true,estoque_movimentar:true,orcamento_criar:true,orcamento_editar:true,orcamento_excluir:true,orcamento_aprovar:true,orcamento_visualizar:true
+        ,preventivas_visualizar: true
+        ,preventivas_editar: true},
     tecnico:{criar_os:false,editar_os:true,excluir_os:false,mudar_status:true,salvar_os:true,checklist_visualizar:true,checklist_preencher:true,fotos_horimetro:true,fotos_servico:true,fotos_pendencias:true,assinatura_tecnico:true,assinatura_cliente:true,timer_controle:true,horas_editar:true,gerar_pdf:true,enviar_email:true,enviar_whatsapp:true,sincronizar:true,limpar_fila:true,baixar_dados:true,heartbeat:true,clientes_cadastrar:false,clientes_editar:false,clientes_excluir:false,clientes_exportar_csv:false,clientes_importar_csv:false,clientes_visualizar:true,historico_visualizar:true,historico_excluir:false,historico_exportar_csv:false,historico_importar_csv:false,historico_limpar:false,agendamentos_criar:false,agendamentos_editar:false,agendamentos_excluir:false,agendamentos_concluir:false,agendamentos_visualizar:false,usuarios_criar:false,usuarios_editar:false,usuarios_excluir:false,usuarios_visualizar:false,permissoes_editar:false,jornada_registrar:true,estoque_cadastrar:false,estoque_editar:false,estoque_excluir:false,estoque_movimentar:true,orcamento_criar:true,orcamento_editar:true,orcamento_excluir:false,orcamento_aprovar:false,orcamento_visualizar:true},
     visualizador:{criar_os:false,editar_os:true,excluir_os:false,mudar_status:true,salvar_os:true,checklist_visualizar:true,checklist_preencher:true,fotos_horimetro:true,fotos_servico:true,fotos_pendencias:true,assinatura_tecnico:true,assinatura_cliente:true,timer_controle:false,horas_editar:false,gerar_pdf:true,enviar_email:true,enviar_whatsapp:true,sincronizar:true,limpar_fila:true,baixar_dados:true,heartbeat:false,clientes_cadastrar:false,clientes_editar:false,clientes_excluir:false,clientes_exportar_csv:false,clientes_importar_csv:false,clientes_visualizar:true,historico_visualizar:true,historico_excluir:false,historico_exportar_csv:false,historico_importar_csv:false,historico_limpar:false,agendamentos_criar:false,agendamentos_editar:false,agendamentos_excluir:false,agendamentos_concluir:false,agendamentos_visualizar:true,usuarios_criar:false,usuarios_editar:false,usuarios_excluir:false,usuarios_visualizar:false,permissoes_editar:false,jornada_registrar:false,estoque_cadastrar:false,estoque_editar:false,estoque_excluir:false,estoque_movimentar:false,orcamento_criar:false,orcamento_editar:false,orcamento_excluir:false,orcamento_aprovar:false,orcamento_visualizar:true}
   },
@@ -985,7 +1027,9 @@ var Auth={currentUser:null,inactivityTimer:null,
   updatePermissions:function(){
     if(!this.currentUser)return;var a=this.isAdmin(),t=this.isTecnico(),badge=$('currentUserNivel');
     if(badge){if(a){badge.textContent='ADMIN';badge.style.background='rgba(249,115,22,.2)';badge.style.color='#fb923c'}else if(t){badge.textContent='TÉCNICO';badge.style.background='rgba(59,130,246,.2)';badge.style.color='#60a5fa'}else{badge.textContent='VISUALIZADOR';badge.style.background='rgba(107,114,128,.2)';badge.style.color='#9ca3af'}}
-    var tabs={tabOrcamentoBtn:'orcamento_visualizar',tabEstoqueBtn:'estoque_cadastrar',tabAgendamentosBtn:'agendamentos_visualizar',tabJornadaBtn:'jornada_registrar',tabPermissoesBtn:'permissoes_editar',tabUsuariosBtn:'usuarios_visualizar'};
+    var tabs={tabOrcamentoBtn:'orcamento_visualizar',tabEstoqueBtn:'estoque_cadastrar',tabAgendamentosBtn:'agendamentos_visualizar',tabJornadaBtn:'jornada_registrar',tabPermissoesBtn:'permissoes_editar',tabUsuariosBtn:'usuarios_visualizar'
+        ,tabPreventivasBtn:'preventivas_visualizar'
+    };
     for(var k in tabs){var el=$(k);if(el)el.style.display=this.can(tabs[k])?'inline-flex':'none'}
     var estTab=$('tabEstoqueBtn');if(estTab)estTab.style.display=this.can('estoque_cadastrar')||this.can('estoque_movimentar')||this.can('estoque_editar')?'inline-flex':'none';
     var btns={btnNovaOS:'criar_os',btnSync:'sincronizar',btnDownload:'baixar_dados'};for(var k2 in btns){var e2=$(k2);if(e2){e2.disabled=!this.can(btns[k2])}}
@@ -1120,7 +1164,7 @@ var Utils={
 };
 
 var App={
-  init:function(){if(State._initDone)return;State._initDone=true;Storage.loadCounter();Storage.loadOrcCounter();Storage.loadPecaCounter();Storage.loadPecas();Storage.loadMovimentos();Storage.loadOrcamentos();Storage.loadLastSeen();Clientes.load();Historico.load();Agendamentos.carregar();this.populateMarcas();Checklist.render();Signature.init();Fotos.init();Horas.initListeners();Utils.setDefaultDate();this.setupTabs();this.setupMarcaSelect();this.setupSearch();this.setupAgendamentoOS();this.setupEstoqueListeners();Timer.restoreTimer();Notificacoes.init();SignatureOrc.init();if(Auth.isTecnico()&&Auth.can('jornada_registrar')){Jornada.carregar();setTimeout(function(){var tb=document.querySelector('.tab-button[data-tab="tab-jornada"]');if(tb)tb.click()},2000)}State.currentStatus='abertura';this.updateUI();UserManager.render();Estoque.renderPecas();Estoque.renderMovimentos();Estoque.updateStats();Estoque.preencherSelectPecas();Estoque.preencherOSList();Orcamento.preencherClientesOrc();Orcamento.novo();Orcamento.renderLista();Orcamento.updateStats();var pc=$('permissoesContainer');if(pc&&Auth.can('permissoes_editar')){var h='';for(var k in Permissoes.padrao)h+='<div class="permission-item"><label><input type="checkbox" id="perm_'+k+'"> '+esc(k.replace(/_/g,' ').toUpperCase())+'</label></div>';pc.innerHTML=h;Permissoes.carregarNaInterface()}if(Auth.can('sincronizar')){window.addEventListener('online',function(){showToast('Conexao restaurada');SyncQueue.scheduleProcess()});setTimeout(function(){GoogleSheetsSync.fetchFromSheet()},1500)}if(Auth.can('heartbeat'))Heartbeat.start();SyncUI.set(navigator.onLine?'Online':'Offline',navigator.onLine?'ok':'offline');window.addEventListener('online',function(){SyncUI.set('Online','ok')});window.addEventListener('offline',function(){SyncUI.set('Offline','offline')});ThemeManager.init();},
+  init:function(){if(State._initDone)return;State._initDone=true;Storage.loadCounter();Storage.loadOrcCounter();Storage.loadPecaCounter();Storage.loadPecas();Storage.loadMovimentos();Storage.loadOrcamentos();Storage.loadLastSeen();Clientes.load();Historico.load();Agendamentos.carregar();this.populateMarcas();Checklist.render();Signature.init();Fotos.init();Horas.initListeners();Utils.setDefaultDate();this.setupTabs();this.setupMarcaSelect();this.setupSearch();this.setupAgendamentoOS();this.setupEstoqueListeners();Timer.restoreTimer();Notificacoes.init();SignatureOrc.init();if(Auth.isTecnico()&&Auth.can('jornada_registrar')){Jornada.carregar();setTimeout(function(){var tb=document.querySelector('.tab-button[data-tab="tab-jornada"]');if(tb)tb.click()},2000)}State.currentStatus='abertura';this.updateUI();UserManager.render();Estoque.renderPecas();Estoque.renderMovimentos();Estoque.updateStats();Estoque.preencherSelectPecas();Estoque.preencherOSList();Orcamento.preencherClientesOrc();Orcamento.novo();Orcamento.renderLista();Orcamento.updateStats();var pc=$('permissoesContainer');if(pc&&Auth.can('permissoes_editar')){var h='';for(var k in Permissoes.padrao)h+='<div class="permission-item"><label><input type="checkbox" id="perm_'+k+'"> '+esc(k.replace(/_/g,' ').toUpperCase())+'</label></div>';pc.innerHTML=h;Permissoes.carregarNaInterface()}if(Auth.can('sincronizar')){window.addEventListener('online',function(){showToast('Conexao restaurada');SyncQueue.scheduleProcess()});setTimeout(function(){GoogleSheetsSync.fetchFromSheet()},1500)}if(Auth.can('heartbeat'))Heartbeat.start();SyncUI.set(navigator.onLine?'Online':'Offline',navigator.onLine?'ok':'offline');window.addEventListener('online',function(){SyncUI.set('Online','ok')});window.addEventListener('offline',function(){SyncUI.set('Offline','offline')});ThemeManager.init();Preventivas.init();},
   setupEstoqueListeners:function(){var sel=$('mov_peca');if(sel)sel.addEventListener('change',function(){Estoque.mostrarEstoqueAtual()});var custo=$('est_preco_custo'),margem=$('est_margem'),venda=$('est_preco_venda');if(custo)custo.addEventListener('input',function(){Estoque.calcFromCusto()});if(margem)margem.addEventListener('input',function(){Estoque.calcFromMargem()});if(venda)venda.addEventListener('input',function(){Estoque.calcFromVenda()});document.addEventListener('click',function(e){var box=$('calcBox');if(!box||!box.classList.contains('show'))return;var form=$('estoqueFormCard');if(form&&form.contains(e.target))return;if(box.contains(e.target))return;Estoque.hideCalcBox();});},
   setupAgendamentoOS:function(){var s=$('ag_tecnico');if(s)s.addEventListener('change',function(){Agendamentos.carregarOSDisponiveis(s.value)})},
   populateMarcas:function(){var s=$('marcaSelect');if(!s)return;s.innerHTML='<option value="">Selecione</option>';Config.marcas.forEach(function(m){if(m!=='OUTRA')s.innerHTML+='<option value="'+m+'">'+m+'</option>'});s.innerHTML+='<option value="OUTRA">OUTRA</option>'},
@@ -1149,6 +1193,208 @@ var App={
   carregarEquipamento:function(eq,cl){Utils.setVal('cliente',cl.nome);Utils.setVal('cnpj',cl.cnpj);Utils.setVal('cidadeCliente',cl.cidade);Utils.setVal('endereco',cl.endereco);Utils.setVal('whatsappCliente',cl.whatsapp);var ms=$('marcaSelect');if(ms){var mk=eq.marca||'';if(Config.marcas.indexOf(mk)!==-1){ms.value=mk;$('marcaOutraDiv').style.display='none'}else if(mk){ms.value='OUTRA';Utils.setVal('marcaOutra',mk);$('marcaOutraDiv').style.display='block'}}Utils.setVal('modelo',eq.modelo||'');Utils.setVal('numSerie',eq.serie||'');if(eq.combustivel)Utils.setVal('combustivel',eq.combustivel);showToast('Equipamento carregado');document.querySelector('.tab-button[data-tab="tab-os"]').click()}
 };
 
+// ==========================================
+// MÓDULO: PREVENTIVAS (Manutenção por Horímetro)
+// ==========================================
+
+// 1. Atualizar o State e Storage
+State.regrasPreventivas = [];
+Storage.saveRegrasPreventivas = function(){ this.save('regras_preventivas', State.regrasPreventivas) };
+Storage.loadRegrasPreventivas = function(){ State.regrasPreventivas = this.load('regras_preventivas') || [] };
+
+// Função auxiliar para extrair números do horímetro (ex: "1250h" vira 1250)
+function parseHorimetroNum(h) { 
+  if(!h) return 0; 
+  return parseInt(String(h).replace(/[^0-9]/g, '')) || 0; 
+}
+
+var Preventivas = {
+  init: function() {
+    Storage.loadRegrasPreventivas();
+    this.populateMarcas();
+    this.renderRegras();
+    this.calcularProximas();
+  },
+
+  populateMarcas: function() {
+    var s = $('prev_marca');
+    if(!s) return;
+    s.innerHTML = '<option value="">Todas as Marcas</option>';
+    Config.marcas.forEach(function(m) {
+      if(m !== 'OUTRA') s.innerHTML += '<option value="'+m+'">'+m+'</option>';
+    });
+  },
+
+  salvarRegra: async function() {
+    var desc = Utils.getVal('prev_descricao').trim();
+    var intervalo = parseInt(Utils.getVal('prev_intervalo'));
+    if(!desc || !intervalo || intervalo <= 0) {
+      showToast('Preencha Descrição e Intervalo de horas', true);
+      return;
+    }
+
+    var editId = Utils.getVal('prev_editId');
+    var regra = {
+      id: editId || Date.now(),
+      descricao: desc,
+      intervalo: intervalo,
+      marca: Utils.getVal('prev_marca'),
+      modelo: Utils.getVal('prev_modelo').trim()
+    };
+
+    if(editId) {
+      var idx = State.regrasPreventivas.findIndex(function(r){ return r.id == editId });
+      if(idx >= 0) State.regrasPreventivas[idx] = regra;
+    } else {
+      State.regrasPreventivas.push(regra);
+    }
+
+    Storage.saveRegrasPreventivas();
+    this.cancelarEdicao();
+    this.renderRegras();
+    this.calcularProximas();
+    showToast('Regra salva!');
+    // SyncQueue.add('upsert','regra_preventiva', regra); // Descomente se criar a sheet no Google
+  },
+
+  editarRegra: function(id) {
+    var r = State.regrasPreventivas.find(function(x){ return x.id === id });
+    if(!r) return;
+    Utils.setVal('prev_editId', r.id);
+    Utils.setVal('prev_descricao', r.descricao);
+    Utils.setVal('prev_intervalo', r.intervalo);
+    Utils.setVal('prev_marca', r.marca);
+    Utils.setVal('prev_modelo', r.modelo);
+    $('btnPrevCancelar').style.display = 'inline-flex';
+  },
+
+  cancelarEdicao: function() {
+    Utils.setVal('prev_editId', '');
+    Utils.setVal('prev_descricao', '');
+    Utils.setVal('prev_intervalo', '');
+    Utils.setVal('prev_marca', '');
+    Utils.setVal('prev_modelo', '');
+    $('btnPrevCancelar').style.display = 'none';
+  },
+
+  excluirRegra: function(id) {
+    if(!confirm('Excluir regra?')) return;
+    State.regrasPreventivas = State.regrasPreventivas.filter(function(r){ return r.id !== id });
+    Storage.saveRegrasPreventivas();
+    this.renderRegras();
+    this.calcularProximas();
+  },
+
+  renderRegras: function() {
+    var tb = $('prevRegrasBody');
+    if(!tb) return;
+    tb.innerHTML = '';
+    if(!State.regrasPreventivas.length) {
+      tb.innerHTML = '<tr><td colspan="5" class="text-center p-4 text-[var(--muted)]">Nenhuma regra cadastrada</td></tr>';
+      return;
+    }
+    State.regrasPreventivas.forEach(function(r) {
+      var row = tb.insertRow();
+      row.innerHTML = '<td class="font-medium">'+esc(r.descricao)+'</td>'+
+                      '<td class="font-mono font-bold">'+r.intervalo+'h</td>'+
+                      '<td>'+(r.marca||'Todas')+'</td>'+
+                      '<td>'+(r.modelo||'Todos')+'</td>'+
+                      '<td><i class="fas fa-edit text-blue-400 cursor-pointer mr-2" onclick="Preventivas.editarRegra('+r.id+')"></i> <i class="fas fa-trash text-red-400 cursor-pointer" onclick="Preventivas.excluirRegra('+r.id+')"></i></td>';
+    });
+  },
+
+  calcularProximas: function() {
+    var tb = $('prevPrevisaoBody');
+    if(!tb) return;
+    tb.innerHTML = '';
+
+    if(!State.regrasPreventivas.length) {
+      tb.innerHTML = '<tr><td colspan="6" class="text-center p-4 text-[var(--muted)]">Cadastre regras acima para ver as previsões</td></tr>';
+      return;
+    }
+
+    // 1. Agrupar os equipamentos por Cliente + Marca + Modelo e pegar o MAIOR horímetro
+    var equipamentos = {};
+    State.osHistory.forEach(function(os) {
+      if(!os.marca && !os.modelo) return;
+      var key = (os.cliente||'N/A') + '|' + (os.marca||'N/A') + '|' + (os.modelo||'N/A');
+      var h = parseHorimetroNum(os.horimetro);
+      if(!equipamentos[key] || h > equipamentos[key].horas) {
+        equipamentos[key] = {
+          cliente: os.cliente || 'N/A',
+          marca: os.marca || 'N/A',
+          modelo: os.modelo || 'N/A',
+          serie: os.numSerie || '',
+          horas: h
+        };
+      }
+    });
+
+    // 2. Cruzar equipamentos com as regras
+    var previsoes = [];
+    for(var key in equipamentos) {
+      var eq = equipamentos[key];
+      if(eq.horas === 0) continue; // Ignora se nunca teve horímetro lançado
+
+      State.regrasPreventivas.forEach(function(regra) {
+        var serveMarca = !regra.marca || regra.marca === eq.marca;
+        var serveModelo = !regra.modelo || regra.modelo.toLowerCase() === eq.modelo.toLowerCase();
+        
+        if(serveMarca && serveModelo) {
+          // Calcula quando foi a última prevenção (assumindo que começou do 0 ou baseado em múltiplos)
+          var ultimaPrevencao = Math.floor(eq.horas / regra.intervalo) * regra.intervalo;
+          var proximaPrevencao = ultimaPrevencao + regra.intervalo;
+          var horasRestantes = proximaPrevencao - eq.horas;
+
+          var statusTxt, statusCls;
+          if(horasRestantes <= 0) {
+            statusTxt = 'VENCIDA'; statusCls = 'stock-zero';
+          } else if(horasRestantes <= 50) {
+            statusTxt = 'CRÍTICO ('+horasRestantes+'h)'; statusCls = 'stock-low';
+          } else {
+            statusTxt = 'OK ('+horasRestantes+'h)'; statusCls = 'stock-ok';
+          }
+
+          previsoes.push({
+            cliente: eq.cliente,
+            equipamento: eq.marca + ' ' + eq.modelo + (eq.serie ? ' ('+eq.serie+')' : ''),
+            horasAtuais: eq.horas,
+            servico: regra.descricao,
+            proxima: proximaPrevencao,
+            statusTxt: statusTxt,
+            statusCls: statusCls
+          });
+        }
+      });
+    }
+
+    // 3. Renderizar tabela
+    if(!previsoes.length) {
+      tb.innerHTML = '<tr><td colspan="6" class="text-center p-4 text-[var(--muted)]">Nenhum equipamento com horímetro encontrado para as regras cadastradas</td></tr>';
+      return;
+    }
+
+    // Ordenar: Vencidas primeiro, depois Crítico, depois OK
+    previsoes.sort(function(a, b) {
+      if(a.statusCls === 'stock-zero') return -1;
+      if(b.statusCls === 'stock-zero') return 1;
+      if(a.statusCls === 'stock-low') return -1;
+      if(b.statusCls === 'stock-low') return 1;
+      return 0;
+    });
+
+    previsoes.forEach(function(p) {
+      var row = tb.insertRow();
+      row.innerHTML = '<td class="font-medium">'+esc(p.cliente).toUpperCase()+'</td>'+
+                      '<td>'+esc(p.equipamento)+'</td>'+
+                      '<td class="font-mono font-bold">'+p.horasAtuais+'h</td>'+
+                      '<td>'+esc(p.servico)+'</td>'+
+                      '<td class="font-mono font-bold">'+p.proxima+'h</td>'+
+                      '<td><span class="px-2 py-1 rounded-full text-xs font-bold '+p.statusCls+'">'+p.statusTxt+'</span></td>';
+    });
+  }
+};
+
 function adicionarCampoEquipamento(marca,modelo,serie,qtd,combustivel){marca=marca||'';modelo=modelo||'';serie=serie||'';qtd=qtd||1;combustivel=combustivel||'';var ct=$('equipamentosList');if(!ct)return;var d=document.createElement('div');d.className='equip-item';var opts='<option value="">Selecione</option>';Config.marcas.forEach(function(m){if(m!=='OUTRA')opts+='<option value="'+m+'"'+(marca===m?' selected':'')+'>'+m+'</option>'});opts+='<option value="OUTRA"'+(marca==='OUTRA'?' selected':'')+'>OUTRA</option>';d.innerHTML='<select class="form-input w-28 equip-marca">'+opts+'</select><div class="outra-marca-container" style="display:'+(marca==='OUTRA'?'block':'none')+'"><input type="text" placeholder="Marca" class="form-input w-28 outra-marca" value="'+esc(marca==='OUTRA'?'':marca)+'"></div><input type="text" placeholder="Modelo" class="form-input w-28 equip-modelo" value="'+esc(modelo)+'"><input type="text" placeholder="Serie" class="form-input w-28 equip-serie" value="'+esc(serie)+'"><input type="number" placeholder="Qtd" class="form-input w-20 equip-qtd" value="'+qtd+'"><select class="form-input w-28 equip-combustivel"><option value="">Comb.</option><option value="eletrico"'+(combustivel==='eletrico'?' selected':'')+'>Eletrico</option><option value="diesel"'+(combustivel==='diesel'?' selected':'')+'>Diesel</option><option value="gasolina"'+(combustivel==='gasolina'?' selected':'')+'>Gasolina</option><option value="glp"'+(combustivel==='glp'?' selected':'')+'>GLP</option></select><button type="button" class="text-red-500" onclick="this.parentElement.remove()"><i class="fas fa-trash"></i></button>';ct.appendChild(d);var sel=d.querySelector('.equip-marca'),od=d.querySelector('.outra-marca-container');sel.addEventListener('change',function(){od.style.display=sel.value==='OUTRA'?'block':'none';if(sel.value!=='OUTRA'){var oi=d.querySelector('.outra-marca');if(oi)oi.value=''}})}
 
 document.addEventListener('DOMContentLoaded',function(){
@@ -1157,6 +1403,7 @@ document.addEventListener('DOMContentLoaded',function(){
     $('appContainer').style.display='none';
     SyncUI.set('Offline','offline')
   }else{
+    Preventivas.init();
     App.init()
   }
 });
@@ -1181,7 +1428,24 @@ document.addEventListener('DOMContentLoaded',function(){
   function hide(){if(hidden||!header)return;hidden=true;header.classList.add('header-hidden');if(indicator)indicator.classList.add('visible')}
   function show(){if(!hidden||!header)return;hidden=false;header.classList.remove('header-hidden');if(indicator)indicator.classList.remove('visible')}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init()
-})();
+};
+
+// ==========================================
+// AJUSTE FINAL PARA GARANTIR RENDERIZAÇÃO
+// ==========================================
+(function(){
+  // Aguarda o App.init() terminar e força a atualização da preventiva
+  var originalInit = App.init;
+  App.init = function() {
+    originalInit.apply(this, arguments);
+    // Pequeno delay para garantir que os dados da planilha já foram carregados
+    setTimeout(function() {
+      if(typeof Preventivas !== 'undefined' && Preventivas.calcularProximas) {
+        Preventivas.calcularProximas();
+      }
+    }, 2000);
+  };
+})()
 </script>
 </body>
 </html>
