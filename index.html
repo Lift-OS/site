@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes">
-  <title>Lift OS - SISTEMA PRO</title>
+  <title>Lift OS - Sistema Profissional</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=JetBrains+Mono:wght@400;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -355,7 +355,7 @@
       <div class="top-bar">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-[var(--accent)] to-[var(--accent-light)] rounded-xl flex items-center justify-center shadow-lg"><svg class="w-5 h-5 md:w-7 md:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg></div>
-          <div><h1 class="font-display text-xl md:text-2xl tracking-wide"><span class="logo-lift">LIFT</span> <span class="logo-os">OS</span></h1><p class="text-xs text-[var(--muted)]">Sistema de O.S - PRO</p></div>
+          <div><h1 class="font-display text-xl md:text-2xl tracking-wide"><span class="logo-lift">LIFT</span> <span class="logo-os">OS</span></h1><p class="text-xs text-[var(--muted)]">SISTEMA DE O.S - PRO</p></div>
         </div>
         <div class="flex items-center gap-3 flex-wrap justify-center">
           <div class="theme-switch" id="themeToggleBtn" title="Alternar tema claro/escuro">
@@ -881,8 +881,39 @@ var SyncQueue={
   limparFila:function(){if(!Auth.isAdmin()){showToast('Apenas administrador',true);return}var q=this.getQueue(),t=q.length;if(!t){showToast('Fila vazia');return}if(!confirm('Limpar '+t+' item(ns)?'))return;this.clearQueue();SyncUI.set('Pronto','ok');showToast('Fila limpa: '+t)},
   _pt:null,
   scheduleProcess:function(){if(this._pt)return;var self=this;this._pt=setTimeout(function(){self._pt=null;self.process()},1500)},
-  async process(){if(!navigator.onLine){SyncUI.set('Offline','error');return}var q=this.getQueue();if(!q.length){SyncUI.set('Pronto','ok');return}SyncUI.set('Sync ('+q.length+')','syncing');var ok=[];for(var i=0;i<q.length;i++){var it=q[i];if(it.retries>=Config.maxSyncRetries)continue;try{var r=false;if(it.entity==='cliente')r=await GoogleSheetsSync.syncSingleCliente(it.data);else if(it.entity==='os')r=await GoogleSheetsSync.syncSingleOS(it.data);else if(it.entity==='agendamento')r=await GoogleSheetsSync.syncSingleAgendamento(it.data);else if(it.entity==='usuario')r=await GoogleSheetsSync.syncUsuarios(it.data);else if(it.entity==='permissao')r=await GoogleSheetsSync.syncPermissoes(it.data);else if(it.entity==='jornada')r=await GoogleSheetsSync.syncJornada(it.data);else if(it.entity==='peca')r=await GoogleSheetsSync.syncPeca(it.data);else if(it.entity==='movimento')r=await GoogleSheetsSync.syncMovimento(it.data);else if(it.entity==='orcamento')r=await GoogleSheetsSync.syncOrcamento(it.data);else if(it.entity==='notificacao')r=await GoogleSheetsSync.syncNotificacao(it.data);
-else if(it.entity==='preventiva')r=await GoogleSheetsSync.syncPreventiva(it.data);else if(it.action==='delete' && it.entity==='preventiva') r=await GoogleSheetsSync.syncDeletePreventiva(it.data);}catch(e){it.retries++}}var nq=q.filter(function(_,i){return ok.indexOf(i)===-1});localStorage.setItem(this.key,JSON.stringify(nq));if(!nq.length){this.clearQueue();SyncUI.set('OK','ok')}else{SyncUI.set('Fila: '+nq.length,'');this.scheduleProcess()}},
+async process(){
+  if(!navigator.onLine){SyncUI.set('Offline','error');return}
+  var q=this.getQueue();
+  if(!q.length){SyncUI.set('Pronto','ok');return}
+  SyncUI.set('Sync ('+q.length+')','syncing');
+  var ok=[];
+  for(var i=0;i<q.length;i++){
+    var it=q[i];
+    if(it.retries>=Config.maxSyncRetries){ok.push(i);continue}
+    try{
+      var r=false;
+      if(it.entity==='cliente')r=await GoogleSheetsSync.syncSingleCliente(it.data);
+      else if(it.entity==='os')r=await GoogleSheetsSync.syncSingleOS(it.data);
+      else if(it.entity==='agendamento')r=await GoogleSheetsSync.syncSingleAgendamento(it.data);
+      else if(it.entity==='usuario')r=await GoogleSheetsSync.syncUsuarios(it.data);
+      else if(it.entity==='permissao')r=await GoogleSheetsSync.syncPermissoes(it.data);
+      else if(it.entity==='jornada')r=await GoogleSheetsSync.syncJornada(it.data);
+      else if(it.entity==='peca')r=await GoogleSheetsSync.syncPeca(it.data);
+      else if(it.entity==='movimento')r=await GoogleSheetsSync.syncMovimento(it.data);
+      else if(it.entity==='orcamento')r=await GoogleSheetsSync.syncOrcamento(it.data);
+      else if(it.entity==='notificacao')r=await GoogleSheetsSync.syncNotificacao(it.data);
+      else if(it.entity==='preventiva'){
+        if(it.action==='delete')r=await GoogleSheetsSync.syncDeletePreventiva(it.data);
+        else r=await GoogleSheetsSync.syncPreventiva(it.data);
+      }
+      if(r)ok.push(i);
+    }catch(e){it.retries++;console.warn('[SYNC] Retry '+it.retries+' '+it.entity,e)}
+  }
+  var nq=q.filter(function(_,i){return ok.indexOf(i)===-1});
+  localStorage.setItem(this.key,JSON.stringify(nq));
+  if(!nq.length){this.clearQueue();SyncUI.set('OK','ok')}
+  else{SyncUI.set('Fila: '+nq.length,'');this.scheduleProcess()}
+},
   forceSync:async function(){if(!Auth.isAdmin()){showToast('Apenas admin',true);return}var b=$('btnSync');if(b){b.classList.add('btn-loading');b.disabled=true}try{await this.process();await GoogleSheetsSync.fetchFromSheet()}finally{if(b){b.classList.remove('btn-loading');b.disabled=!Auth.can('sincronizar')}}}
 };
 
