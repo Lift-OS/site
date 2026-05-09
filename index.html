@@ -252,7 +252,22 @@
     .notif-bell:hover{border-color:var(--warning);background:var(--card)}
     .notif-badge{position:absolute;top:-4px;right:-4px;background:var(--danger);color:#fff;border-radius:10px;padding:0 6px;font-size:10px;font-weight:700;min-width:18px;text-align:center;animation:notifPop .4s ease}
     @keyframes notifPop{0%{transform:scale(0)}60%{transform:scale(1.2)}100%{transform:scale(1)}}
-    .notif-dropdown{align-items:center;top:calc(100% + 8px);right:0;width:460px;max-height:550px;background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:0 16px 25px rgba(0,0,0,.6);z-index:260;display:none;overflow:hidden;flex-direction:column}
+     .notif-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%; /* Move o lado esquerdo do dropdown para o meio do elemento pai */
+  transform: translateX(-50%); /* Puxa o dropdown de volta 50% do seu próprio tamanho, centralizando-o */
+  width: 360px;
+  max-height: 450px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 20px 40px rgba(0,0,0,.6);
+  z-index: 160;
+  display: none;
+  overflow: hidden;
+  flex-direction: column;
+}
     .notif-dropdown.open{display:flex;animation:dropIn .2s ease}
     .notif-dropdown-header{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
     .notif-dropdown-header h4{font-size:.85rem;font-weight:700;color:var(--accent);margin:0}
