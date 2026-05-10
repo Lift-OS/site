@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lift O.S PRO - Sistema de Ordem de Serviço para Empilhadeiras</title>
+  <title>Lift OS PRO - Sistema de Ordem de Serviço para Empilhadeiras</title>
   <meta name="description" content="O sistema definitivo para gestão de manutenção de empilhadeiras. Controle de horímetro, preventivas, estoque e assinatura digital.">
   
-  <!-- Fontes e Ícones -->
+  <!-- Fontes (Adicionada Bebas Neue) e Ícones -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   <style>
@@ -105,21 +105,34 @@
       height: 80px;
     }
 
+    /* LOGO ATUALIZADA COM BEBAS NEUE */
     .logo {
-      font-size: 1.8rem;
-      font-weight: 900;
-      letter-spacing: 1px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 3rem; /* Tamanho ajustado para Bebas Neue */
+      letter-spacing: 2px;
       text-decoration: none;
-      color: white;
+      display: flex;
+      align-items: baseline;
     }
 
-    .logo span:nth-child(1) { font-style: italic; color: var(--text-muted); font-weight: 400; }
-    .logo span:nth-child(2) { font-style: italic; color: var(--primary); }
+    .logo-lift {
+      font-style: italic;
+      color: var(--text-muted); /* Cinza */
+      font-weight: 400;
+    }
+
+    .logo-os {
+      font-style: italic;
+      color: var(--primary); /* Laranja */
+      font-weight: 700;
+      margin-left: 8px; /* Espaço entre LIFT e OS */
+    }
 
     .nav-links {
       display: flex;
       gap: 30px;
       list-style: none;
+      align-items: center;
     }
 
     .nav-links a {
@@ -437,7 +450,11 @@
   <header>
     <div class="container">
       <nav>
-        <a href="#" class="logo">LIFT <span>O.S</span></a>
+        <!-- Logo Atualizada -->
+        <a href="#" class="logo">
+          <span class="logo-lift">LIFT</span>
+          <span class="logo-os">O.S</span>
+        </a>
         <ul class="nav-links" id="navLinks">
           <li><a href="#funcionalidades">Funcionalidades</a></li>
           <li><a href="#vantagens">Vantagens</a></li>
@@ -572,7 +589,11 @@
     <div class="container">
       <div class="footer-grid">
         <div class="footer-about">
-          <a href="#" class="logo" style="font-size: 2rem;">LIFT <span>O.S</span></a>
+          <!-- Logo Atualizada no Footer -->
+          <a href="#" class="logo" style="font-size: 2.5rem;">
+            <span class="logo-lift">LIFT</span>
+            <span class="logo-os">O.S</span>
+          </a>
           <p>O sistema de gestão de Ordens de Serviço e manutenção projetado para oficinas e frotas de empilhadeiras. Eficiência e lucratividade na palma da mão.</p>
         </div>
         <div class="footer-links">
@@ -603,5 +624,5 @@
     <i class="fab fa-whatsapp"></i>
   </a>
 
-</body> 
+</body>
 </html>
